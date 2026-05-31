@@ -17,9 +17,9 @@ public class ResourceService {
     }
 
     private void initializeResources() {
-        createIfNotExists("rock", 10, 60);
-        createIfNotExists("mushroom", 5, 120);
-        createIfNotExists("weed", 20, 300);
+        createIfNotExists("rock", 10, 5);
+        createIfNotExists("mushroom", 5, 5);
+        createIfNotExists("weed", 20, 5);
     }
     // Chamado uma vez quando o Spring inicia, cadastra os recursos no banco se ainda nao existirem
 
