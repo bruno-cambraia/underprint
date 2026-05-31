@@ -11,27 +11,25 @@
 
       <button
           class="mine-btn"
-          :disabled="resource.status === 'ESGOTADA'"
+          :disabled="resource.status === 'ESGOTADA' || cooldown > 0"
           @click="mine"
       >
-        {{ resource.status === 'ESGOTADA' ? `Esgotada (${resource.secondsUntilRespawn}s)` : '⛏️ Minerar' }}
+        {{ cooldown > 0 ? `⏳ ${cooldown.toFixed(1)}s` : resource.status === 'ESGOTADA' ? '🪨 Esgotada' : '⛏️ Minerar' }}
       </button>
 
-      <div class="durability-bar">
-        <div
-            class="durability-fill"
-            :style="{ width: durabilityPercent + '%' }"
-        ></div>
+      <div class="bar-label">Durabilidade</div>
+      <div class="bar">
+        <div class="bar-fill green" :style="{ width: durabilityPercent + '%' }"></div>
       </div>
 
-      <div v-if="resource.status === 'ESGOTADA'" class="respawn-container">
-        <p class="respawn-label">Respawn em {{ resource.secondsUntilRespawn }}s</p>
-        <div class="respawn-bar">
-          <div
-              class="respawn-fill"
-              :style="{ width: respawnPercent + '%' }"
-          ></div>
-        </div>
+      <div v-if="resource.status === 'ESGOTADA'" class="bar-label">Respawn</div>
+      <div v-if="resource.status === 'ESGOTADA'" class="bar">
+        <div class="bar-fill red" :style="{ width: respawnPercent + '%' }"></div>
+      </div>
+
+      <div v-if="cooldown > 0" class="bar-label">Cooldown</div>
+      <div v-if="cooldown > 0" class="bar">
+        <div class="bar-fill orange" :style="{ width: cooldownPercent + '%' }"></div>
       </div>
     </div>
   </div>
@@ -49,7 +47,8 @@ interface ResourceState {
 }
 
 const API = 'https://underprint.onrender.com'
-const TOTAL_RESPAWN = 5 // muda aqui para bater com o backend
+const TOTAL_RESPAWN = 5
+const COOLDOWN_TIME = 0.5
 
 const resource = ref<ResourceState>({
   name: 'rock',
@@ -59,13 +58,11 @@ const resource = ref<ResourceState>({
   secondsUntilRespawn: 0
 })
 
-const durabilityPercent = computed(() => {
-  return (resource.value.durability / 10) * 100
-})
+const cooldown = ref(0)
 
-const respawnPercent = computed(() => {
-  return (resource.value.secondsUntilRespawn / TOTAL_RESPAWN) * 100
-})
+const durabilityPercent = computed(() => (resource.value.durability / 10) * 100)
+const respawnPercent = computed(() => (resource.value.secondsUntilRespawn / TOTAL_RESPAWN) * 100)
+const cooldownPercent = computed(() => (cooldown.value / COOLDOWN_TIME) * 100)
 
 async function fetchState() {
   const res = await fetch(`${API}/resource/rock`)
@@ -73,25 +70,30 @@ async function fetchState() {
 }
 
 async function mine() {
-  const res = await fetch(`${API}/resource/rock/mine`, {
-    method: 'POST'
-  })
+  if (cooldown.value > 0) return
+  const res = await fetch(`${API}/resource/rock/mine`, { method: 'POST' })
   resource.value = await res.json()
+  cooldown.value = COOLDOWN_TIME
 }
 
 let interval: number
+let cooldownInterval: number
 
 onMounted(() => {
   fetchState()
   interval = setInterval(() => {
-    if (resource.value.status === 'ESGOTADA') {
-      fetchState()
-    }
+    if (resource.value.status === 'ESGOTADA') fetchState()
   }, 1000)
+  cooldownInterval = setInterval(() => {
+    if (cooldown.value > 0) {
+      cooldown.value = Math.max(0, cooldown.value - 0.1)
+    }
+  }, 100)
 })
 
 onUnmounted(() => {
   clearInterval(interval)
+  clearInterval(cooldownInterval)
 })
 </script>
 
@@ -108,13 +110,11 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1rem;
+  gap: 0.5rem;
   margin-top: 2rem;
 }
 
-.rock-info {
-  text-align: center;
-}
+.rock-info { text-align: center; }
 
 .mine-btn {
   padding: 1rem 2rem;
@@ -125,48 +125,21 @@ onUnmounted(() => {
   background-color: #4a4a4a;
   color: white;
   transition: transform 0.1s;
+  margin-bottom: 0.5rem;
 }
 
-.mine-btn:hover:not(:disabled) {
-  transform: scale(1.05);
-}
+.mine-btn:hover:not(:disabled) { transform: scale(1.05); }
+.mine-btn:active:not(:disabled) { transform: scale(0.95); }
+.mine-btn:disabled { background-color: #999; cursor: not-allowed; }
 
-.mine-btn:active:not(:disabled) {
-  transform: scale(0.95);
-}
-
-.mine-btn:disabled {
-  background-color: #999;
-  cursor: not-allowed;
-}
-
-.durability-bar {
-  width: 200px;
-  height: 12px;
-  background-color: #ddd;
-  border-radius: 6px;
-  overflow: hidden;
-}
-
-.durability-fill {
-  height: 100%;
-  background-color: #4caf50;
-  transition: width 0.3s;
-}
-
-.respawn-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.respawn-label {
-  font-size: 0.9rem;
+.bar-label {
+  font-size: 0.8rem;
   color: #666;
+  align-self: flex-start;
+  margin-left: calc(50% - 100px);
 }
 
-.respawn-bar {
+.bar {
   width: 200px;
   height: 12px;
   background-color: #ddd;
@@ -174,9 +147,12 @@ onUnmounted(() => {
   overflow: hidden;
 }
 
-.respawn-fill {
+.bar-fill {
   height: 100%;
-  background-color: #f44336;
-  transition: width 1s linear;
+  transition: width 0.1s linear;
 }
+
+.green { background-color: #4caf50; }
+.red { background-color: #f44336; }
+.orange { background-color: #ff9800; }
 </style>
