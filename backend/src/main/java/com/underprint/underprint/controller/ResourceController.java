@@ -6,7 +6,7 @@ import com.underprint.underprint.service.ResourceService;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = {"http://localhost:5173", "https://underprint.vercel.app"})
 // Diz para o Spring que essa classe recebe requisições HTTP e devolve dados JSON
 @RequestMapping("/resource")
 // Todas as rotas dessa classe começam com /resource
