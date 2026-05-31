@@ -142,7 +142,7 @@ onUnmounted(() => {
 
 .bar {
   width: 200px;
-  height: 12px;
+  height: 15px;
   background-color: #ddd;
   border-radius: 6px;
   overflow: hidden;
