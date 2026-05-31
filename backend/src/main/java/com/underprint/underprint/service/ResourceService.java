@@ -32,9 +32,12 @@ public class ResourceService {
     // só cria se não existir, evitando duplicatas
 
     public Resource getResource(String name) {
-        // Busca um recurso pelo nome e valida
-        return resourceRepository.findByName(name)
-                .orElseThrow(() -> new RuntimeException("Recurso não encontrado:" + name));
+        Resource resource = resourceRepository.findByName(name)
+                .orElseThrow(() -> new RuntimeException("Recurso não encontrado: " + name));
+        if (resource.isAvailable() && resource.getDurability() == resource.getMaxDurability()) {
+            return resource;
+        }
+        return resourceRepository.save(resource);
     }
     // .orElseThrow() lança um erro automaticamente se o Optional vier vazio
 

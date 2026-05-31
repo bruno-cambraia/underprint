@@ -77,6 +77,8 @@ public class Resource {
     public String getName() { return name; }
     public int getDurability() { return durability; }
     public int getResourceCount() { return resourceCount; }
+    public int getMaxDurability() { return maxDurability; }
+
     // Getters simples, janelas que deixam ver o valor de um campo privado sem poder modifica-los por fora
 
     public long getSecondsUntilRespawn() {
@@ -89,7 +91,7 @@ public class Resource {
     }
 
     public String getStatus() {
-        return isAvailable() ? "DISPONIVEL" : "EMPTY";
+        return isAvailable() ? "DISPONIVEL" : "ESGOTADA";
         // ? Operador ternário
     }
 
