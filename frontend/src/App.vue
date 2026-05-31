@@ -23,6 +23,16 @@
             :style="{ width: durabilityPercent + '%' }"
         ></div>
       </div>
+
+      <div v-if="resource.status === 'ESGOTADA'" class="respawn-container">
+        <p class="respawn-label">Respawn em {{ resource.secondsUntilRespawn }}s</p>
+        <div class="respawn-bar">
+          <div
+              class="respawn-fill"
+              :style="{ width: respawnPercent + '%' }"
+          ></div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -39,6 +49,7 @@ interface ResourceState {
 }
 
 const API = 'https://underprint.onrender.com'
+const TOTAL_RESPAWN = 5 // muda aqui para bater com o backend
 
 const resource = ref<ResourceState>({
   name: 'rock',
@@ -50,6 +61,10 @@ const resource = ref<ResourceState>({
 
 const durabilityPercent = computed(() => {
   return (resource.value.durability / 10) * 100
+})
+
+const respawnPercent = computed(() => {
+  return (resource.value.secondsUntilRespawn / TOTAL_RESPAWN) * 100
 })
 
 async function fetchState() {
@@ -137,5 +152,31 @@ onUnmounted(() => {
   height: 100%;
   background-color: #4caf50;
   transition: width 0.3s;
+}
+
+.respawn-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.respawn-label {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.respawn-bar {
+  width: 200px;
+  height: 12px;
+  background-color: #ddd;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.respawn-fill {
+  height: 100%;
+  background-color: #f44336;
+  transition: width 1s linear;
 }
 </style>
