@@ -2,7 +2,7 @@
   <div class="game">
     <header class="header">
       <span class="title">Underprint</span>
-      <span class="counter">⛏️ Pedras brutas: {{ resource.resourceCount }}</span>
+      <span class="counter">Pedras brutas: {{ resource.resourceCount }}</span>
     </header>
 
     <div class="scene">
@@ -168,13 +168,13 @@ onUnmounted(() => {
 .respawn-bar-wrapper {
   position: absolute;
   top: 64%;
-  left: 49%;
-  width: 120px;
+  left: 50%;
+  width: 23%;
 }
 
 .respawn-bar {
-  width: 100%;
-  height: 10px;
+  width: 50%;
+  height: 3px;
   background: rgba(255,255,255,0.1);
   border-radius: 6px;
   overflow: hidden;
