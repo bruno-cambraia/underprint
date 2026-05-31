@@ -44,3 +44,6 @@ frontend/dist/
 
 # Sistema
 .DS_Store
+
+# Credenciais
+backend/src/main/resources/application.properties
