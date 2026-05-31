@@ -1,33 +1,22 @@
 <template>
   <div class="game">
-    <h1>Underprint</h1>
+    <header class="header">
+      <span class="title">Underprint</span>
+      <span class="counter">⛏️ Pedras brutas: {{ resource.resourceCount }}</span>
+    </header>
 
     <div class="scene">
-      <div class="rock-wrapper">
-        <img
-            src="/rock.png"
-            class="rock-img"
-            :class="{ hit: isHitting, exhausted: resource.status === 'ESGOTADA' }"
-            @click="mine"
-        />
-      </div>
-
-      <div class="info">
-        <p>⛏️ Pedras brutas: {{ resource.resourceCount }}</p>
-      </div>
-
-      <div class="bars">
-        <div class="bar-label">Durabilidade</div>
-        <div class="bar">
-          <div class="bar-fill green" :style="{ width: durabilityPercent + '%' }"></div>
+      <img src="/background.jpeg" class="background-img" />
+      <img
+          src="/rock.png"
+          class="rock-img"
+          :class="{ hit: isHitting, exhausted: resource.status === 'ESGOTADA' }"
+          @click="mine"
+      />
+      <div class="respawn-bar-wrapper" v-if="resource.status === 'ESGOTADA'">
+        <div class="respawn-bar">
+          <div class="respawn-fill" :style="{ width: respawnPercent + '%' }"></div>
         </div>
-
-        <template v-if="resource.status === 'ESGOTADA'">
-          <div class="bar-label">Respawn {{ respawnCountdown.toFixed(1) }}s</div>
-          <div class="bar">
-            <div class="bar-fill red" :style="{ width: respawnPercent + '%' }"></div>
-          </div>
-        </template>
       </div>
     </div>
   </div>
@@ -58,7 +47,6 @@ const resource = ref<ResourceState>({
 const isHitting = ref(false)
 const respawnCountdown = ref(0)
 
-const durabilityPercent = computed(() => (resource.value.durability / 10) * 100)
 const respawnPercent = computed(() => (respawnCountdown.value / TOTAL_RESPAWN) * 100)
 
 async function fetchState() {
@@ -72,10 +60,8 @@ async function fetchState() {
 
 async function mine() {
   if (resource.value.status === 'ESGOTADA') return
-
   isHitting.value = true
   setTimeout(() => isHitting.value = false, 150)
-
   const res = await fetch(`${API}/resource/rock/mine`, { method: 'POST' })
   const data = await res.json()
   resource.value = data
@@ -106,94 +92,97 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.game {
-  min-height: 100vh;
-  background-image: url('/background.jpeg');
-  background-size: cover;
-  background-position: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 2rem;
-  font-family: 'Georgia', serif;
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-h1 {
+.game {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #1a1a1a;
+}
+
+.header {
+  height: 56px;
+  background: #111;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.5rem;
+  border-bottom: 1px solid #333;
+  flex-shrink: 0;
+}
+
+.title {
   color: #f0e6c8;
-  font-size: 2.5rem;
-  text-shadow: 2px 2px 8px #000;
-  margin-bottom: 1rem;
+  font-family: 'Georgia', serif;
+  font-size: 1.4rem;
+  letter-spacing: 2px;
+}
+
+.counter {
+  color: #f0e6c8;
+  font-family: 'Georgia', serif;
+  font-size: 1rem;
 }
 
 .scene {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
+  position: relative;
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
 }
 
-.rock-wrapper {
-  cursor: pointer;
+.background-img {
+  width: 100%;
+  height: auto;
+  display: block;
 }
 
 .rock-img {
-  width: 220px;
+  position: absolute;
+  width: 23%;
+  top: 42%;
+  left: 44%;
+  cursor: pointer;
   transition: transform 0.1s, filter 0.1s;
-  filter: drop-shadow(0 8px 16px rgba(0,0,0,0.8));
+  filter: drop-shadow(0 2px 2px rgba(0,0,0,0.8));
 }
 
 .rock-img:hover {
-  transform: scale(1.05);
+  transform: scale(1.01);
 }
 
 .rock-img.hit {
-  transform: scale(0.92) rotate(-3deg);
-  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.8)) brightness(1.3);
+  transform: scale(0.99) rotate(-1deg);
 }
 
 .rock-img.exhausted {
-  filter: grayscale(80%) drop-shadow(0 4px 8px rgba(0,0,0,0.5));
+  filter: grayscale(80%);
   cursor: not-allowed;
-  opacity: 0.5;
 }
 
-.info {
-  color: #f0e6c8;
-  font-size: 1.2rem;
-  text-shadow: 1px 1px 4px #000;
-  background: rgba(0,0,0,0.5);
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
+.respawn-bar-wrapper {
+  position: absolute;
+  top: 64%;
+  left: 49%;
+  width: 120px;
 }
 
-.bars {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  background: rgba(0,0,0,0.6);
-  padding: 1rem;
-  border-radius: 10px;
-  min-width: 220px;
-}
-
-.bar-label {
-  font-size: 0.8rem;
-  color: #f0e6c8;
-}
-
-.bar {
+.respawn-bar {
   width: 100%;
-  height: 12px;
-  background-color: rgba(255,255,255,0.2);
+  height: 10px;
+  background: rgba(255,255,255,0.1);
   border-radius: 6px;
   overflow: hidden;
 }
 
-.bar-fill {
+.respawn-fill {
   height: 100%;
+  background: #f44336;
   transition: width 0.1s linear;
 }
-
-.green { background-color: #4caf50; }
-.red { background-color: #f44336; }
 </style>
