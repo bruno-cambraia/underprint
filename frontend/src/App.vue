@@ -11,10 +11,10 @@
 
       <button
           class="mine-btn"
-          :disabled="resource.status === 'ESGOTADA' || cooldown > 0"
+          :disabled="resource.status === 'ESGOTADA'"
           @click="mine"
       >
-        {{ cooldown > 0 ? `⏳ ${cooldown.toFixed(1)}s` : resource.status === 'ESGOTADA' ? '🪨 Esgotada' : '⛏️ Minerar' }}
+        {{ resource.status === 'ESGOTADA' ? '🪨 Esgotada' : '⛏️ Minerar' }}
       </button>
 
       <div class="bar-label">Durabilidade</div>
@@ -22,15 +22,12 @@
         <div class="bar-fill green" :style="{ width: durabilityPercent + '%' }"></div>
       </div>
 
-      <div v-if="resource.status === 'ESGOTADA'" class="bar-label">Respawn</div>
-      <div v-if="resource.status === 'ESGOTADA'" class="bar">
-        <div class="bar-fill red" :style="{ width: respawnPercent + '%' }"></div>
-      </div>
-
-      <div v-if="cooldown > 0" class="bar-label">Cooldown</div>
-      <div v-if="cooldown > 0" class="bar">
-        <div class="bar-fill orange" :style="{ width: cooldownPercent + '%' }"></div>
-      </div>
+      <template v-if="resource.status === 'ESGOTADA'">
+        <div class="bar-label">Respawn {{ respawnCountdown.toFixed(1) }}s</div>
+        <div class="bar">
+          <div class="bar-fill red" :style="{ width: respawnPercent + '%' }"></div>
+        </div>
+      </template>
     </div>
   </div>
 </template>
@@ -48,7 +45,6 @@ interface ResourceState {
 
 const API = 'https://underprint.onrender.com'
 const TOTAL_RESPAWN = 5
-const COOLDOWN_TIME = 0.5
 
 const resource = ref<ResourceState>({
   name: 'rock',
@@ -58,42 +54,47 @@ const resource = ref<ResourceState>({
   secondsUntilRespawn: 0
 })
 
-const cooldown = ref(0)
+const respawnCountdown = ref(0)
 
 const durabilityPercent = computed(() => (resource.value.durability / 10) * 100)
-const respawnPercent = computed(() => (resource.value.secondsUntilRespawn / TOTAL_RESPAWN) * 100)
-const cooldownPercent = computed(() => (cooldown.value / COOLDOWN_TIME) * 100)
+const respawnPercent = computed(() => (respawnCountdown.value / TOTAL_RESPAWN) * 100)
 
 async function fetchState() {
   const res = await fetch(`${API}/resource/rock`)
-  resource.value = await res.json()
+  const data = await res.json()
+  resource.value = data
+  if (data.status === 'ESGOTADA') {
+    respawnCountdown.value = data.secondsUntilRespawn
+  }
 }
 
 async function mine() {
-  if (cooldown.value > 0) return
   const res = await fetch(`${API}/resource/rock/mine`, { method: 'POST' })
-  resource.value = await res.json()
-  cooldown.value = COOLDOWN_TIME
+  const data = await res.json()
+  resource.value = data
+  if (data.status === 'ESGOTADA') {
+    respawnCountdown.value = TOTAL_RESPAWN
+  }
 }
 
-let interval: number
-let cooldownInterval: number
+let fetchInterval: number
+let countdownInterval: number
 
 onMounted(() => {
   fetchState()
-  interval = setInterval(() => {
+  fetchInterval = setInterval(() => {
     if (resource.value.status === 'ESGOTADA') fetchState()
   }, 1000)
-  cooldownInterval = setInterval(() => {
-    if (cooldown.value > 0) {
-      cooldown.value = Math.max(0, cooldown.value - 0.1)
+  countdownInterval = setInterval(() => {
+    if (respawnCountdown.value > 0) {
+      respawnCountdown.value = Math.max(0, respawnCountdown.value - 0.1)
     }
   }, 100)
 })
 
 onUnmounted(() => {
-  clearInterval(interval)
-  clearInterval(cooldownInterval)
+  clearInterval(fetchInterval)
+  clearInterval(countdownInterval)
 })
 </script>
 
@@ -154,5 +155,4 @@ onUnmounted(() => {
 
 .green { background-color: #4caf50; }
 .red { background-color: #f44336; }
-.orange { background-color: #ff9800; }
 </style>
