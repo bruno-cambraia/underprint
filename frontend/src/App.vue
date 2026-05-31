@@ -2,32 +2,33 @@
   <div class="game">
     <h1>Underprint</h1>
 
-    <div class="rock-container">
-      <div class="rock-info">
-        <h2>{{ resource.name }}</h2>
-        <p>Durabilidade: {{ resource.durability }} / 10</p>
-        <p>Pedras brutas: {{ resource.resourceCount }}</p>
+    <div class="scene">
+      <div class="rock-wrapper">
+        <img
+            src="/rock.png"
+            class="rock-img"
+            :class="{ hit: isHitting, exhausted: resource.status === 'ESGOTADA' }"
+            @click="mine"
+        />
       </div>
 
-      <button
-          class="mine-btn"
-          :disabled="resource.status === 'ESGOTADA'"
-          @click="mine"
-      >
-        {{ resource.status === 'ESGOTADA' ? '🪨 Esgotada' : '⛏️ Minerar' }}
-      </button>
-
-      <div class="bar-label">Durabilidade</div>
-      <div class="bar">
-        <div class="bar-fill green" :style="{ width: durabilityPercent + '%' }"></div>
+      <div class="info">
+        <p>⛏️ Pedras brutas: {{ resource.resourceCount }}</p>
       </div>
 
-      <template v-if="resource.status === 'ESGOTADA'">
-        <div class="bar-label">Respawn {{ respawnCountdown.toFixed(1) }}s</div>
+      <div class="bars">
+        <div class="bar-label">Durabilidade</div>
         <div class="bar">
-          <div class="bar-fill red" :style="{ width: respawnPercent + '%' }"></div>
+          <div class="bar-fill green" :style="{ width: durabilityPercent + '%' }"></div>
         </div>
-      </template>
+
+        <template v-if="resource.status === 'ESGOTADA'">
+          <div class="bar-label">Respawn {{ respawnCountdown.toFixed(1) }}s</div>
+          <div class="bar">
+            <div class="bar-fill red" :style="{ width: respawnPercent + '%' }"></div>
+          </div>
+        </template>
+      </div>
     </div>
   </div>
 </template>
@@ -54,6 +55,7 @@ const resource = ref<ResourceState>({
   secondsUntilRespawn: 0
 })
 
+const isHitting = ref(false)
 const respawnCountdown = ref(0)
 
 const durabilityPercent = computed(() => (resource.value.durability / 10) * 100)
@@ -69,6 +71,11 @@ async function fetchState() {
 }
 
 async function mine() {
+  if (resource.value.status === 'ESGOTADA') return
+
+  isHitting.value = true
+  setTimeout(() => isHitting.value = false, 150)
+
   const res = await fetch(`${API}/resource/rock/mine`, { method: 'POST' })
   const data = await res.json()
   resource.value = data
@@ -100,50 +107,84 @@ onUnmounted(() => {
 
 <style scoped>
 .game {
+  min-height: 100vh;
+  background-image: url('/background.jpeg');
+  background-size: cover;
+  background-position: center;
   display: flex;
   flex-direction: column;
   align-items: center;
   padding: 2rem;
-  font-family: sans-serif;
+  font-family: 'Georgia', serif;
 }
 
-.rock-container {
+h1 {
+  color: #f0e6c8;
+  font-size: 2.5rem;
+  text-shadow: 2px 2px 8px #000;
+  margin-bottom: 1rem;
+}
+
+.scene {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
-  margin-top: 2rem;
+  gap: 1rem;
 }
 
-.rock-info { text-align: center; }
-
-.mine-btn {
-  padding: 1rem 2rem;
-  font-size: 1.5rem;
+.rock-wrapper {
   cursor: pointer;
-  border: none;
-  border-radius: 8px;
-  background-color: #4a4a4a;
-  color: white;
-  transition: transform 0.1s;
-  margin-bottom: 0.5rem;
 }
 
-.mine-btn:hover:not(:disabled) { transform: scale(1.05); }
-.mine-btn:active:not(:disabled) { transform: scale(0.95); }
-.mine-btn:disabled { background-color: #999; cursor: not-allowed; }
+.rock-img {
+  width: 220px;
+  transition: transform 0.1s, filter 0.1s;
+  filter: drop-shadow(0 8px 16px rgba(0,0,0,0.8));
+}
+
+.rock-img:hover {
+  transform: scale(1.05);
+}
+
+.rock-img.hit {
+  transform: scale(0.92) rotate(-3deg);
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.8)) brightness(1.3);
+}
+
+.rock-img.exhausted {
+  filter: grayscale(80%) drop-shadow(0 4px 8px rgba(0,0,0,0.5));
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.info {
+  color: #f0e6c8;
+  font-size: 1.2rem;
+  text-shadow: 1px 1px 4px #000;
+  background: rgba(0,0,0,0.5);
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+}
+
+.bars {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  background: rgba(0,0,0,0.6);
+  padding: 1rem;
+  border-radius: 10px;
+  min-width: 220px;
+}
 
 .bar-label {
   font-size: 0.8rem;
-  color: #666;
-  align-self: flex-start;
-  margin-left: calc(50% - 100px);
+  color: #f0e6c8;
 }
 
 .bar {
-  width: 200px;
-  height: 15px;
-  background-color: #ddd;
+  width: 100%;
+  height: 12px;
+  background-color: rgba(255,255,255,0.2);
   border-radius: 6px;
   overflow: hidden;
 }
